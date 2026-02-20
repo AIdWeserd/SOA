@@ -1,0 +1,174 @@
+specification {
+  element actor
+  element system
+  element container
+  element database
+}
+
+model {
+  buyer = actor 'Покупатель' {
+    style {
+      shape person
+    }
+  }
+  seller = actor 'Продавец'{
+    style {
+      shape person
+    }
+  }
+
+  frontend = container 'Frontend' {
+    description 'Веб-приложение маркетплейса'
+    style {
+      shape browser
+    }
+  }
+
+  backend = system 'Backend' {
+    API = container 'API Gateway' {
+      description 'Единая точка входа. Маршрутизация запросов'
+    }
+
+    user_service = container 'User Service' {
+      description 'Управление пользователями'
+    }
+
+    catalog_service = container 'Catalog Service' {
+      description 'Товарный каталог'
+    }
+
+    order_service = container 'Order Service' {
+      description 'Заказы'
+    }
+
+    payment_service = container 'Payment Service' {
+      description 'Платежи'
+    }
+
+    notification_service = container 'Notification Service' {
+      description 'Уведомления'
+    }
+
+    feed_service = container 'Feed Service' {
+      description 'Персонализированная лента'
+    }
+
+    user_db = database 'User DB' {
+      description 'Данные пользователей'
+      style {
+        shape storage
+        icon tech:postgresql
+        color green
+      }
+    }
+
+    catalog_db = database 'Catalog DB' {
+      description 'Данные товаров'
+      style {
+        shape storage
+        icon tech:postgresql
+        color green
+      }
+    }
+
+    order_db = database 'Order DB' {
+      description 'Данные заказов'
+      style {
+        shape storage
+        icon tech:postgresql
+        color green
+      }
+    }
+
+    payment_db = database 'Payment DB' {
+      description 'Данные платежей'
+      style {
+        shape storage
+        icon tech:postgresql
+        color green
+      }
+    }
+
+    session_storage = database 'Session Storage' {
+      description 'Данные о сессиях'
+      style {
+        shape storage
+        icon tech:redis
+        color amber
+      }
+    }
+
+    feed_cache = database 'Feed Cache' {
+      description 'Кэш рекомендаций'
+      style {
+        shape storage
+        icon tech:redis
+        color amber
+      }
+    }
+    
+    message_broker = container 'Message Broker' {
+      description 'Асинхронная коммуникация'
+      style {
+        shape queue
+        icon tech:rabbitmq
+        color red
+      }
+    } 
+  }
+
+  
+  mail_api = system 'Mail API' {
+    description 'Внешний email-провайдер'
+    style {
+      shape browser
+      color gray
+    }
+  }
+
+  money_api = system 'Money API' {
+    description 'Внешняя платёжная система'
+    style {
+      shape browser
+      color gray
+    }
+  }
+
+  buyer -> frontend 'Просмотр каталога, заказы'
+  seller -> frontend 'Управление товарами'
+
+  frontend -> API 'HTTPS/REST запросы'
+
+  API -> user_service 'gRPC: CRUD операции пользователя'
+  API -> feed_service 'gRPC: Запрос персонализированной ленты'
+  API -> catalog_service 'gRPC: CRUD операции товаров'
+  API -> order_service 'gRPC: Создание/получение заказа'
+  API -> payment_service 'gRPC: Инициализация платежа'
+
+  user_service -> user_db 'Чтение/запись'
+  user_service -> session_storage 'Чтение/запись'
+  catalog_service -> catalog_db 'Чтение/запись'
+  order_service -> order_db 'Чтение/запись'
+  payment_service -> payment_db 'Чтение/запись'
+  feed_service -> feed_cache "Чтение/запись"
+
+  order_service -> catalog_service ''
+  order_service -> user_service 'gRPC: данные пользователя'
+  order_service -> payment_service 'gRPC: инициализация платежа'
+  feed_service -> catalog_service 'gRPC: товары'
+  feed_service -> user_service 'gRPC: предпочтения'
+
+  payment_service -> message_broker 'Публикация о платеже'
+  order_service -> message_broker 'Публикация об изменении статуса'
+  notification_service -> message_broker 'Подписка на события заказов'
+
+  payment_service -> money_api 'Запрос платежа'
+  notification_service -> mail_api 'Отправка уведомления через email'
+}
+
+views {
+  view container {
+    title 'Marketplace — C4 Container'
+    include backend.*, frontend, mail_api, money_api
+  }
+}
