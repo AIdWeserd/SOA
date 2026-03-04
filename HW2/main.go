@@ -13,6 +13,7 @@ import (
 	"hw2/src/handler"
 	"hw2/src/repository"
 	"hw2/src/service"
+	"hw2/src/middleware"
 )
 
 func main() {
@@ -48,7 +49,7 @@ func main() {
 	}
 
 	fmt.Printf("starting server on %s\n", addr)
-	if err := http.ListenAndServe(addr, srv); err != nil {
+	if err := http.ListenAndServe(addr, middleware.Logging(srv)); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }
