@@ -167,6 +167,10 @@ model {
 }
 
 views {
+  view context {
+    title 'Context'
+    include *
+  }
   view container {
     title 'Marketplace — C4 Container'
     include backend.*, frontend, mail_api, money_api

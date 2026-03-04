@@ -1,0 +1,281 @@
+openapi: 3.0.3
+info:
+  title: Super Puper API
+  description: Mega super puper duper API
+  version: 1.0.0
+
+paths:
+  /products:
+    post:
+      summary: Создание товара
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: Товар успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        'default':
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    get:
+      summary: Список товаров с пагинацией и фильтрацией
+      operationId: listProducts
+      parameters:
+        - name: page
+          in: query
+          description: Номер страницы (начиная с 0)
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Размер страницы
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          description: Фильтр по статусу
+          required: false
+          schema:
+            $ref: '#/components/schemas/ProductStatus'
+        - name: category
+          in: query
+          description: Фильтр по категории (точное совпадение)
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        'default':
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /products/{id}:
+    get:
+      summary: Получение товара по ID
+      operationId: getProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Товар найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        'default':
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Обновление товара
+      operationId: updateProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: Товар успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        'default':
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Мягкое удаление товара (перевод в статус ARCHIVED)
+      operationId: deleteProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Товар успешно архивирован
+        'default':
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ProductCreate:
+      type: object
+      required:
+        - name
+        - price
+        - stock
+        - category
+        - status
+      properties:
+        name:
+          type: string
+          description: Название товара
+        description:
+          type: string
+          nullable: true
+          description: Описание товара
+        price:
+          type: string
+          format: decimal
+          description: Цена товара (> 0)
+        stock:
+          type: integer
+          description: Остаток на складе
+        category:
+          type: string
+          description: Категория товара
+        status:
+          description: Состояние товара
+          $ref: '#/components/schemas/ProductStatus'
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+        stock:
+          type: integer
+        category:
+          type: string
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+
+    ProductResponse:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - stock
+        - category
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор товара
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        price:
+          type: string
+          format: decimal
+        stock:
+          type: integer
+        category:
+          type: string
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        created_at:
+          type: string
+          format: date-time
+          description: Время создания
+        updated_at:
+          type: string
+          format: date-time
+          description: Время обновления
+
+    ProductPage:
+      type: object
+      required:
+        - content
+        - totalElements
+        - page
+        - size
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductResponse'
+        totalElements:
+          type: integer
+          description: Общее количество элементов
+        page:
+          type: integer
+          description: Номер текущей страницы
+        size:
+          type: integer
+          description: Размер страницы
+    
+    ProductStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, ARCHIVED]
+
+    Error:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+          description: Машиночитаемый код ошибки
+          example: PRODUCT_NOT_FOUND
+        message:
+          type: string
+          description: Человекочитаемое описание
+          example: Товар не найден
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Дополнительные данные
