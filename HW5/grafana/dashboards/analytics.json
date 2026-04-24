@@ -1,0 +1,83 @@
+{
+  "title": "Cinema Analytics",
+  "uid": "cinema-analytics",
+  "schemaVersion": 38,
+  "time": { "from": "now-7d", "to": "now" },
+  "refresh": "5m",
+  "panels": [
+    {
+      "id": 1,
+      "title": "DAU (Daily Active Users)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "uid": "clickhouse-cinema" },
+      "targets": [{
+        "datasource": { "uid": "clickhouse-cinema" },
+        "rawSql": "SELECT event_date AS time, max(dau) AS dau FROM cinema.agg_dau GROUP BY event_date ORDER BY event_date",
+        "format": "time_series"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "View Conversion Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "uid": "clickhouse-cinema" },
+      "targets": [{
+        "datasource": { "uid": "clickhouse-cinema" },
+        "rawSql": "SELECT event_date AS time, max(conversion_rate) * 100 AS conversion_pct FROM cinema.agg_conversion GROUP BY event_date ORDER BY event_date",
+        "format": "time_series"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Top 10 Movies (last 7 days)",
+      "type": "barchart",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "uid": "clickhouse-cinema" },
+      "targets": [{
+        "datasource": { "uid": "clickhouse-cinema" },
+        "rawSql": "SELECT movie_id, sum(view_count) AS total_views FROM cinema.agg_top_movies WHERE event_date >= today() - 7 GROUP BY movie_id ORDER BY total_views DESC LIMIT 10",
+        "format": "table"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Average Watch Time (seconds)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "uid": "clickhouse-cinema" },
+      "targets": [{
+        "datasource": { "uid": "clickhouse-cinema" },
+        "rawSql": "SELECT event_date AS time, max(avg_seconds) AS avg_watch_seconds FROM cinema.agg_avg_watch_time GROUP BY event_date ORDER BY event_date",
+        "format": "time_series"
+      }]
+    },
+    {
+      "id": 5,
+      "title": "Retention Cohort Heatmap (D0–D7)",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 10 },
+      "datasource": { "uid": "clickhouse-cinema" },
+      "options": { "footer": { "show": false } },
+      "targets": [{
+        "datasource": { "uid": "clickhouse-cinema" },
+        "rawSql": "SELECT cohort_date, groupArray(retention_pct)[1] AS d0, groupArray(retention_pct)[2] AS d1, groupArray(retention_pct)[3] AS d2, groupArray(retention_pct)[4] AS d3, groupArray(retention_pct)[5] AS d4, groupArray(retention_pct)[6] AS d5, groupArray(retention_pct)[7] AS d6, groupArray(retention_pct)[8] AS d7 FROM ( SELECT cohort_date, day_number, max(retention_pct) AS retention_pct FROM cinema.agg_retention GROUP BY cohort_date, day_number ORDER BY cohort_date, day_number ) GROUP BY cohort_date ORDER BY cohort_date DESC LIMIT 14",
+        "format": "table"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "displayMode": "color-background-solid" },
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "yellow", "value": 25   },
+              { "color": "green",  "value": 60   }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
